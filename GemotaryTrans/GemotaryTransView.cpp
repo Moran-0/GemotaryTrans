@@ -32,6 +32,7 @@ BEGIN_MESSAGE_MAP(CGemotaryTransView, CView)
 	ON_COMMAND(ID_32771, &CGemotaryTransView::OnMDraw)
 	ON_COMMAND(ID_32772, &CGemotaryTransView::OnProJect)
 	ON_COMMAND(ID_32773, &CGemotaryTransView::DrawRoll)
+	ON_COMMAND(ID_32774, &CGemotaryTransView::DrawBFace)
 END_MESSAGE_MAP()
 
 // CGemotaryTransView 构造/析构
@@ -304,7 +305,7 @@ void CGemotaryTransView::DrawRoll()
 	double Theta, Phi;//旋转角度，半径
 	const double dt = PI / 12;
 	Theta = PI / 6;
-	Phi = PI / 4;
+	Phi = PI / 3;
 
 	CTransform trans;
 	trans.num = 4;
@@ -409,4 +410,341 @@ void CGemotaryTransView::DrawRoll()
 
 	}
 	ReleaseDC(pDC);//释放DC	
+}
+
+
+void CGemotaryTransView::DrawBFace()
+{
+	// TODO: 在此添加命令处理程序代码
+	CDC* pDC = GetDC();
+
+	CRect rect;
+	GetClientRect(&rect);
+	pDC->SetMapMode(MM_ANISOTROPIC);
+	pDC->SetWindowExt(rect.Width(), rect.Height());
+	pDC->SetViewportExt(rect.Width(), -rect.Height());
+	pDC->SetViewportOrg(rect.Width() / 2, rect.Height() / 2);
+
+	double alpha, beta, R;
+	R = 200;
+	const int N = 20;
+	const double PI = 3.141592653589793;
+	const double da = 1.0 / N;
+	const double db = 1.0 / N;
+	double v1, v2, u1, u2;
+	v1 = v2 = u1 = u2 = 0.0;
+
+	/*控制点*/
+	CP3 p[4][4];
+	p[0][0].x = -2000; p[0][0].y = 0; p[0][1].x = -2000; p[0][1].y = -1000;
+	p[0][2].x = -1000; p[0][2].y = -2000; p[0][3].x = 0; p[0][1].y = -2000;
+	p[0][0].z = 0; p[0][1].z = 1000; p[0][2].z = 1000; p[0][3].z = 0;
+
+	p[1][0].x = -4000.0/3; p[1][0].y = 2000.0/3; p[1][1].x = -1000; p[1][1].y = 0;
+	p[1][2].x = 0; p[1][2].y = -1000; p[1][3].x = 2000.0/3; p[1][1].y = -4000.0/3;
+	p[1][0].z = 0; p[1][1].z = 1000; p[1][2].z = 1000; p[1][3].z = 0;
+
+	p[2][0].x = -200.0/3; p[2][0].y = 400.0/3; p[2][1].x = 0; p[2][1].y = 100;
+	p[2][2].x = 100; p[2][2].y = 0; p[2][3].x = 400.0/3; p[2][1].y = -200.0/3;
+	p[2][0].z = 0; p[2][1].z = 100; p[2][2].z = 100; p[2][3].z = 0;
+
+	p[3][0].x = 0; p[3][0].y = 200; p[3][1].x = 100; p[3][1].y = 200;
+	p[3][2].x = 200; p[3][2].y = 100; p[3][3].x = 200; p[3][1].y = 0;
+	p[3][0].z = 0; p[3][1].z = 100; p[3][2].z = 100; p[3][3].z = 0;
+
+	double Mb[4][4]{}, Mbt[4][4]{};//变换矩阵
+	Mb[0][0] = -1.0 / 6; Mb[0][1] = 1.0 / 2; Mb[0][2] = -1.0 / 2; Mb[0][3] = 1.0 / 6;
+	Mb[1][0] = 1.0 / 2; Mb[1][1] = -1.0; Mb[1][2] = 1.0 / 2; Mb[1][3] = 0;
+	Mb[2][0] = -1.0 / 2; Mb[2][1] = 0; Mb[2][2] = 1.0 / 2; Mb[2][3] = 0;
+	Mb[3][0] = 1.0 / 6; Mb[2][1] = 2.0 / 3; Mb[3][2] = 1.0 / 6; Mb[3][3] = 0;
+
+	/*转置矩阵*/
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++)
+			Mbt[i][j] = Mb[j][i];
+	}
+
+	/*观察变换矩阵设置*/
+	double k[9];
+	double Theta, Phi;//旋转角度，半径
+	const double dt = PI / 12;
+	Theta = PI / 6;
+	Phi = PI / 2;
+
+	k[1] = sin(Theta);
+	k[2] = sin(Phi);
+	k[3] = cos(Theta);
+	k[4] = cos(Phi);
+	k[5] = k[2] * k[3];
+	k[6] = k[2] * k[1];
+	k[7] = k[4] * k[3];
+	k[8] = k[4] * k[1];
+
+
+	CTransform trans;
+	trans.num = 4;
+	trans.POld3 = new CP3[trans.num];
+
+	/*初始化变换矩阵*/
+	trans.T4[0][0] = k[3]; trans.T4[0][1] = -k[8]; trans.T4[0][2] = -k[6]; trans.T4[0][3] = 0;
+	trans.T4[1][0] = 0; trans.T4[1][1] = k[2]; trans.T4[1][2] = -k[4]; trans.T4[1][3] = 0;
+	trans.T4[2][0] = -k[1]; trans.T4[2][1] = -k[7]; trans.T4[2][2] = -k[5]; trans.T4[2][3] = 0;
+	trans.T4[3][0] = 0; trans.T4[3][1] = 0; trans.T4[3][2] = R; trans.T4[3][3] = 1;
+
+	double TU4[4]{};
+	double TV4[4]{};
+
+	for (alpha = 0; alpha <= 1; alpha += da)
+	{
+		u1 = alpha;
+		u2 = alpha + da;
+		for (beta = 0; beta <= 1; beta += db)
+		{
+			v1 = beta;
+			v2 = beta + db;
+			CP3 p0, p1, p2, p3;//四个点
+
+			/*计算v0 x*/
+			TU4[0] = pow(u1, 3); TU4[1] = pow(u1, 2); TU4[2] = u1; TU4[3] = 1;
+			TV4[0] = pow(v2, 3); TV4[1] = pow(v2, 2); TV4[2] = v2; TV4[3] = 1;
+			trans.U4 = TU4;
+			trans.V4 = TV4;
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = Mb[i][j];
+			trans.MultiMatrix14();
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = p[i][j].x;
+			trans.MultiMatrix14();
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = Mbt[i][j];
+			trans.MultiMatrix14();
+			p0.x = trans.MultiMartix141();
+
+			/*计算v0 y*/
+			TU4[0] = pow(u1, 3); TU4[1] = pow(u1, 2); TU4[2] = u1; TU4[3] = 1;
+			TV4[0] = pow(v2, 3); TV4[1] = pow(v2, 2); TV4[2] = v2; TV4[3] = 1;
+			trans.U4 = TU4;
+			trans.V4 = TV4;
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = Mb[i][j];
+			trans.MultiMatrix14();
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = p[i][j].y;
+			trans.MultiMatrix14();
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = Mbt[i][j];
+			trans.MultiMatrix14();
+			p0.y = trans.MultiMartix141();
+			/*计算v0 z*/
+			TU4[0] = pow(u1, 3); TU4[1] = pow(u1, 2); TU4[2] = u1; TU4[3] = 1;
+			TV4[0] = pow(v2, 3); TV4[1] = pow(v2, 2); TV4[2] = v2; TV4[3] = 1;
+			trans.U4 = TU4;
+			trans.V4 = TV4;
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = Mb[i][j];
+			trans.MultiMatrix14();
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = p[i][j].z;
+			trans.MultiMatrix14();
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = Mbt[i][j];
+			trans.MultiMatrix14();
+			p0.z = trans.MultiMartix141();
+
+
+
+			/*计算v1 x*/
+			TU4[0] = pow(u1, 3); TU4[1] = pow(u1, 2); TU4[2] = u1; TU4[3] = 1;
+			TV4[0] = pow(v1, 3); TV4[1] = pow(v1, 2); TV4[2] = v1; TV4[3] = 1;
+			trans.U4 = TU4;
+			trans.V4 = TV4;
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = Mb[i][j];
+			trans.MultiMatrix14();
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = p[i][j].x;
+			trans.MultiMatrix14();
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = Mbt[i][j];
+			trans.MultiMatrix14();
+			p1.x = trans.MultiMartix141();
+			/*计算v1 y*/
+			TU4[0] = pow(u1, 3); TU4[1] = pow(u1, 2); TU4[2] = u1; TU4[3] = 1;
+			TV4[0] = pow(v1, 3); TV4[1] = pow(v1, 2); TV4[2] = v1; TV4[3] = 1;
+			trans.U4 = TU4;
+			trans.V4 = TV4;
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = Mb[i][j];
+			trans.MultiMatrix14();
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = p[i][j].y;
+			trans.MultiMatrix14();
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = Mbt[i][j];
+			trans.MultiMatrix14();
+			p1.y = trans.MultiMartix141();
+			/*计算v1 z*/
+			TU4[0] = pow(u1, 3); TU4[1] = pow(u1, 2); TU4[2] = u1; TU4[3] = 1;
+			TV4[0] = pow(v1, 3); TV4[1] = pow(v1, 2); TV4[2] = v1; TV4[3] = 1;
+			trans.U4 = TU4;
+			trans.V4 = TV4;
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = Mb[i][j];
+			trans.MultiMatrix14();
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = p[i][j].z;
+			trans.MultiMatrix14();
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = Mbt[i][j];
+			trans.MultiMatrix14();
+			p1.z = trans.MultiMartix141();
+
+
+
+			/*计算v2 x*/
+			TU4[0] = pow(u2, 3); TU4[1] = pow(u2, 2); TU4[2] = u2; TU4[3] = 1;
+			TV4[0] = pow(v1, 3); TV4[1] = pow(v1, 2); TV4[2] = v1; TV4[3] = 1;
+			trans.U4 = TU4;
+			trans.V4 = TV4;
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = Mb[i][j];
+			trans.MultiMatrix14();
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = p[i][j].x;
+			trans.MultiMatrix14();
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = Mbt[i][j];
+			trans.MultiMatrix14();
+			p2.x = trans.MultiMartix141();
+			/*计算v2 y*/
+			TU4[0] = pow(u2, 3); TU4[1] = pow(u2, 2); TU4[2] = u2; TU4[3] = 1;
+			TV4[0] = pow(v1, 3); TV4[1] = pow(v1, 2); TV4[2] = v1; TV4[3] = 1;
+			trans.U4 = TU4;
+			trans.V4 = TV4;
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = Mb[i][j];
+			trans.MultiMatrix14();
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = p[i][j].y;
+			trans.MultiMatrix14();
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = Mbt[i][j];
+			trans.MultiMatrix14();
+			p2.y = trans.MultiMartix141();
+			/*计算v2 z*/
+			TU4[0] = pow(u2, 3); TU4[1] = pow(u2, 2); TU4[2] = u2; TU4[3] = 1;
+			TV4[0] = pow(v1, 3); TV4[1] = pow(v1, 2); TV4[2] = v1; TV4[3] = 1;
+			trans.U4 = TU4;
+			trans.V4 = TV4;
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = Mb[i][j];
+			trans.MultiMatrix14();
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = p[i][j].z;
+			trans.MultiMatrix14();
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = Mbt[i][j];
+			trans.MultiMatrix14();
+			p2.z = trans.MultiMartix141();
+
+
+
+			/*计算v3 x*/
+			TU4[0] = pow(u2, 3); TU4[1] = pow(u2, 2); TU4[2] = u2; TU4[3] = 1;
+			TV4[0] = pow(v2, 3); TV4[1] = pow(v2, 2); TV4[2] = v2; TV4[3] = 1;
+			trans.U4 = TU4;
+			trans.V4 = TV4;
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = Mb[i][j];
+			trans.MultiMatrix14();
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = p[i][j].x;
+			trans.MultiMatrix14();
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = Mbt[i][j];
+			trans.MultiMatrix14();
+			p3.x = trans.MultiMartix141();
+			/*计算v3 y*/
+			TU4[0] = pow(u2, 3); TU4[1] = pow(u2, 2); TU4[2] = u2; TU4[3] = 1;
+			TV4[0] = pow(v2, 3); TV4[1] = pow(v2, 2); TV4[2] = v2; TV4[3] = 1;
+			trans.U4 = TU4;
+			trans.V4 = TV4;
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = Mb[i][j];
+			trans.MultiMatrix14();
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = p[i][j].y;
+			trans.MultiMatrix14();
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = Mbt[i][j];
+			trans.MultiMatrix14();
+			p3.y = trans.MultiMartix141();
+			/*计算v3 z*/
+			TU4[0] = pow(u2, 3); TU4[1] = pow(u2, 2); TU4[2] = u2; TU4[3] = 1;
+			TV4[0] = pow(v2, 3); TV4[1] = pow(v2, 2); TV4[2] = v2; TV4[3] = 1;
+			trans.U4 = TU4;
+			trans.V4 = TV4;
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = Mb[i][j];
+			trans.MultiMatrix14();
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = p[i][j].z;
+			trans.MultiMatrix14();
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					trans.T4[i][j] = Mbt[i][j];
+			trans.MultiMatrix14();
+			p3.z = trans.MultiMartix141();
+
+			/*坐标观察变换*/
+			CP3 Pold3[4];
+			Pold3[0] = p0; Pold3[1] = p1;Pold3[2] = p2; Pold3[3] = p3;
+			trans.POld3 = Pold3;
+			trans.T4[0][0] = k[3]; trans.T4[0][1] = -k[8]; trans.T4[0][2] = -k[6]; trans.T4[0][3] = 0;
+			trans.T4[1][0] = 0; trans.T4[1][1] = k[2]; trans.T4[1][2] = -k[4]; trans.T4[1][3] = 0;
+			trans.T4[2][0] = -k[1]; trans.T4[2][1] = -k[7]; trans.T4[2][2] = -k[5]; trans.T4[2][3] = 0;
+			trans.T4[3][0] = 0; trans.T4[3][1] = 0; trans.T4[3][2] = R; trans.T4[3][3] = 1;
+			trans.MultiMatrix4();
+
+			pDC->MoveTo(trans.POld3[0].x, trans.POld3[0].z);
+			for (int i = 1; i < 4; i++)
+				pDC->LineTo(trans.POld3[i].x, trans.POld3[i].z);
+			pDC->LineTo(trans.POld3[0].x, trans.POld3[0].z);
+		}
+	}
 }

@@ -148,3 +148,24 @@ void CTransform::MultiMatrix4()
 	}
 	delete[]PNew;
 }
+
+
+void CTransform::MultiMatrix14()
+{
+	double U4New[4]{};
+	for (int i = 0; i < num; i++) {
+		U4New[i] = U4[0] * T4[0][i] + U4[1] * T4[1][i] + U4[2] * T4[2][i] + U4[3] * T4[3][i];
+	}
+	for (int i = 0; i < num; i++)
+		U4[i] = U4New[i];
+
+}
+
+double CTransform::MultiMartix141()
+{
+	double res = 0;
+	for (int i = 0; i < num; i++) {
+		res += U4[i] * V4[i];
+	}
+	return res;
+}

@@ -29,9 +29,13 @@ public:
 	void Shear(double, double);//错切变换矩阵
 	void MultiMatrix();//矩阵相乘
 	void MultiMatrix4();//4阶矩阵相乘
+	void MultiMatrix14();
+	double MultiMartix141();
 public:
 	double T[3][3];
 	double T4[4][4];
+	double *U4;
+	double *V4;
 	CP2* POld;
 	CP3* POld3;//3维坐标点数组指针
 	int num;

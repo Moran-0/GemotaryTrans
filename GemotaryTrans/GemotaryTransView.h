@@ -47,6 +47,7 @@ public:
 	afx_msg void OnMDraw();
 	afx_msg void OnProJect();
 	afx_msg void DrawRoll();
+	afx_msg void DrawBFace();
 };
 
 #ifndef _DEBUG  // GemotaryTransView.cpp 中的调试版本
